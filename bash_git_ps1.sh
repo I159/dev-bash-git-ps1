@@ -36,6 +36,12 @@
 #       source ~/.bash_git_ps1.sh
 #-----------------------------------------------------------------------------------------------
 
+# FLAGS
+# FIXME: use these flags to enable/disable the options
+FULL_PATH=1;
+USE_TIME=0;
+COUNT_STRING=0;
+
 # colors
 case "$TERM" in
     xterm*|rxvt*|screen*)
@@ -267,9 +273,9 @@ __git_prompt() {
     local last_exit="$?" # keep here.. so we get the last command
 
     # setup PS1
-    local host="${GREY}\h:${RESET}"
-    local dir="${CYAN}\W${RESET}" 
-    PS1="[$host $dir]"
+    local user="${GREY}\u:${RESET}"
+    local dir="${CYAN}\$PWD${RESET}"
+    PS1="$user$dir"
 
     # when in git repository
     local gitdir="$(__git_dirname)"
@@ -303,18 +309,18 @@ __git_prompt() {
 
                 # calc relative time diff of last commit
                 local secs="$(__git_secs_since)"
-                if [ -n "$secs" ]; then
-                    local timestr=" [$(__git_timestr_relformat $secs true)]"
-                    extras="${countstr}${wd_syms}${timestr}"
-                else 
-                    extras="${countstr}${wd_syms}"
-                fi
+                #if [ -n "$secs" ]; then
+                #    local timestr=" [$(__git_timestr_relformat $secs true)]"
+                #    extras="${countstr}${wd_syms}${timestr}"
+                #else
+                extras="${countstr}${wd_syms}"
+                #fi
             ;;
         esac
-        branch="${YELLOW}${branch}${RESET}"
+        branch="[${YELLOW}${branch}${RESET}]"
 
         # update PS1
-        PS1="${PS1} ${branch}${extras}"
+        PS1="${PS1}${branch}${extras}"
     fi
 
     # setup marker that acts off of last exit code
@@ -325,6 +331,6 @@ __git_prompt() {
         marker="$RED"
     fi
     marker="${marker}\$${RESET}"
-    PS1="${PS1} → \n\n${marker} "
+    PS1="${PS1}${marker} "
 }
 PROMPT_COMMAND=__git_prompt
