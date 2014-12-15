@@ -30,6 +30,7 @@
 #       * - unstaged changes
 #       ^ - stashed changes
 #       % - untracked files
+#       ! - rebase is in progress
 #
 # Installation:
 #   Add the following line to your .bashrc:
@@ -214,18 +215,6 @@ __git_count_str() {
     echo "$str"
 }
 
-# get the unix timestamp for the lastest commit (seconds)
-__git_secs_since() {
-    local now="$(date +%s)"
-    local last_commit="$(git log --format='%at' -1 2>/dev/null)"
-    if [ -z "$last_commit" ]; then # probably initial git init, no commits
-        return
-    fi
-    if [ 0 -lt "$now" ] && [ 0 -lt "$last_commit" ]; then
-        echo "$((now - last_commit))"
-    fi
-}
-
 # prints a relative-formatted time string from unix timestamp
 # arg: unix timestamp in seconds
 # optional arg: true to include coloring
@@ -268,6 +257,15 @@ __git_timestr_relformat() {
     echo "$timestr"
 }
 
+
+__git_rebase_status() {
+    if [ -d "$(__git_dirname)/rebase-merge" ]; then
+        local warn="!"
+        local color="${LIGHT_RED}"
+    fi
+    echo "${color}${warn}"
+}
+
 # install git integration into PS1
 __git_prompt() {
     local last_exit="$?" # keep here.. so we get the last command
@@ -305,15 +303,9 @@ __git_prompt() {
 
                 # extras (count strings, working dir symbols)
                 local countstr="$(__git_count_str)"
-                local wd_syms="${LIGHT_VIOLET}$(__git_working_dir_symbols)${RESET}"
-
-                # calc relative time diff of last commit
-                local secs="$(__git_secs_since)"
-                #if [ -n "$secs" ]; then
-                #    local timestr=" [$(__git_timestr_relformat $secs true)]"
-                #    extras="${countstr}${wd_syms}${timestr}"
-                #else
-                extras="${countstr}${wd_syms}"
+                local wd_syms="${LIGHT_VIOLET}$(__git_working_dir_symbols)"
+                local rebase="$(__git_rebase_status)${RESET}"
+                extras="${countstr}${wd_syms}${rebase}"
                 #fi
             ;;
         esac
