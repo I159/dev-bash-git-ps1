@@ -227,6 +227,15 @@ __git_count_str() {
     echo "$str"
 }
 
+__python_env_name() {
+    local env="$VIRTUAL_ENV"
+    local name="$(basename \ ${env})"
+    if [ -n "$VIRTUAL_ENV" ]
+    then
+        echo "${YELLOW}{${name}}"
+    fi
+}
+
 # install git integration into PS1
 __git_prompt() {
     local last_exit="$?" # keep here.. so we get the last command
@@ -274,9 +283,10 @@ __git_prompt() {
             ;;
         esac
         branch="[${YELLOW}${branch}${RESET}]"
+        local env_name="$(__python_env_name)"
 
         # update PS1
-        PS1="${PS1}${branch}${extras}"
+        PS1="${env_name}${PS1}${branch}${extras}"
     fi
 
     # setup marker that acts off of last exit code
