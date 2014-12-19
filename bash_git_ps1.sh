@@ -37,11 +37,9 @@
 #       source ~/.bash_git_ps1.sh
 #-----------------------------------------------------------------------------------------------
 
-# FLAGS
-# FIXME: use these flags to enable/disable the options
-FULL_PATH=1;
-USE_TIME=0;
-COUNT_STRING=0;
+# Flags. To use the options set an environment variables listed below
+# PS_FULPATH - show full path to the current dir in PS1
+# GIT_BRANCH_FULL - show full branch name with slashes (OpenStack Gerrit specific)
 
 # colors
 case "$TERM" in
@@ -118,18 +116,21 @@ __git_working_dir_symbols() {
 
     # in working dir
     if [ true = "$(git rev-parse --is-inside-work-tree 2>/dev/null)" ]; then
-        git diff --no-ext-diff --quiet --exit-code || symbols="*"
+        git diff --no-ext-diff --quiet --exit-code || symbols=" ✪"
         if git rev-parse --quiet --verify HEAD >/dev/null; then
-            git diff-index --cached --quiet HEAD -- || symbols="${symbols}+"
+            git diff-index --cached --quiet HEAD -- || symbols="${symbols} ✎"
         fi
     fi
 
     # stashed
-    git rev-parse --verify refs/stash >/dev/null 2>&1 && symbols="${symbols}^"
+    git rev-parse --verify refs/stash >/dev/null 2>&1 && symbols="${symbols} ✂"
 
     # untracked files
     if [ -n "$(git ls-files --others --exclude-standard)" ]; then
-        symbols="${symbols}%"
+        symbols="${symbols} ⚒"
+    fi
+    if [ -d "$(__git_dirname)/rebase-merge" ]; then
+        symbols="${symbols} ☠"
     fi
     echo "$symbols"
 }
@@ -177,6 +178,17 @@ __git_branch_name() {
     echo "$branch"
 }
 
+__git_disp_branch_name() {
+    local branch="$(__git_branch_name)"
+    if [ -n "$GIT_BRANCH_FULL" ]
+    then
+        echo "$branch"
+    else
+        IFS='/' read -ra ADDR <<< "$branch"
+        echo "...${ADDR[-1]}"
+    fi
+}
+
 # prints if inside git directory or bare git repository
 __git_in_gitdir() {
     if [ true = "$(git rev-parse --is-inside-git-dir 2>/dev/null)" ]; then
@@ -215,64 +227,18 @@ __git_count_str() {
     echo "$str"
 }
 
-# prints a relative-formatted time string from unix timestamp
-# arg: unix timestamp in seconds
-# optional arg: true to include coloring
-__git_timestr_relformat() {
-    local secs="$1"
-    local yrs="$(( $secs / 31557600 ))"
-    local div="$(( $secs % 31557600 ))"
-    local days="$(( div / 86400 ))"
-    div="$(( $secs % 86400 ))"
-    local hrs="$(( $div / 3600 ))"
-    div="$(( $secs % 3600 ))"
-    local mins="$(( $div / 60 ))"
-
-    # create the formatted time string
-    local timestr
-    [ 0 -lt "$yrs" ] && timestr="${yrs}y"
-    if [ 0 -lt "$days" ]; then
-        [ -n "$timestr" ] && timestr="$timestr,"
-        timestr="${days}d"
-    fi
-    if [ 0 -lt "$hrs" ]; then
-        [ -n "$timestr" ] && timestr="$timestr,"
-        timestr="${timestr}${hrs}h"
-    fi
-    [ -n "$timestr" ] && timestr="${timestr},"
-    timestr="${timestr}${mins}m"
-
-    # add a hint of color
-    if [ -n "$2" ]; then
-        local color
-        if [ 1800 -lt "$secs" ]; then # 30 mins
-            color="$LIGHT_RED"
-        elif [ 600 -lt "$secs" ]; then # 10 mins
-            color="$YELLOW"
-        else
-            color="$LIGHT_GREEN"
-        fi
-        timestr="${color}${timestr}${RESET}"
-    fi
-    echo "$timestr"
-}
-
-
-__git_rebase_status() {
-    if [ -d "$(__git_dirname)/rebase-merge" ]; then
-        local warn="!"
-        local color="${LIGHT_RED}"
-    fi
-    echo "${color}${warn}"
-}
-
 # install git integration into PS1
 __git_prompt() {
     local last_exit="$?" # keep here.. so we get the last command
 
     # setup PS1
     local user="${GREY}\u:${RESET}"
-    local dir="${CYAN}\$PWD${RESET}"
+    if [ -n "$PS_FULLPATH" ]
+    then
+        local dir="${CYAN}\$PWD${RESET}"
+    else
+        local dir="${CYAN}...\W${RESET}"
+    fi
     PS1="$user$dir"
 
     # when in git repository
@@ -288,7 +254,7 @@ __git_prompt() {
                 extras=""
             ;;
             *)
-                local branch="$(__git_branch_name current ${gitdir})"
+                local branch="$(__git_disp_branch_name current ${gitdir})"
                 local br_state="$(__git_branching_state $gitdir)"
 
                 # rebasing..use merge head for branch name
@@ -304,9 +270,7 @@ __git_prompt() {
                 # extras (count strings, working dir symbols)
                 local countstr="$(__git_count_str)"
                 local wd_syms="${LIGHT_VIOLET}$(__git_working_dir_symbols)"
-                local rebase="$(__git_rebase_status)${RESET}"
-                extras="${countstr}${wd_syms}${rebase}"
-                #fi
+                extras="${countstr}${wd_syms}"
             ;;
         esac
         branch="[${YELLOW}${branch}${RESET}]"
@@ -318,11 +282,11 @@ __git_prompt() {
     # setup marker that acts off of last exit code
     local marker
     if [ 0 -eq "$last_exit" ]; then
-        marker="$GREEN"
+        marker="$GREY"
     else
         marker="$RED"
     fi
-    marker="${marker}\$${RESET}"
+    marker="${marker} »${RESET}"
     PS1="${PS1}${marker} "
 }
 PROMPT_COMMAND=__git_prompt
