@@ -185,7 +185,7 @@ __git_disp_branch_name() {
         echo "$branch"
     else
         IFS='/' read -ra ADDR <<< "$branch"
-        echo "...${ADDR[-1]}"
+        echo "${ADDR[-1]}"
     fi
 }
 
@@ -246,7 +246,7 @@ __git_prompt() {
     then
         local dir="${CYAN}\$PWD${RESET}"
     else
-        local dir="${CYAN}...\W${RESET}"
+        local dir="${CYAN}\W${RESET}"
     fi
     PS1="$user$dir"
 
@@ -264,18 +264,18 @@ __git_prompt() {
             ;;
             *)
                 local branch="$(__git_disp_branch_name current ${gitdir})"
-                local br_state="$(__git_branching_state $gitdir)"
-
-                # rebasing..use merge head for branch name
-                case "$br_state" in
-                    rebase-*)
-                        # get the ref head during rebase
-                        branch="$(cat "$gitdir/rebase-merge/head-name")"
-                        branch="${branch##refs/heads/}"
-                        branch="${branch##remotes/}"
-                    ;;
-                esac
-
+#                local br_state="$(__git_branching_state $gitdir)"
+#
+#                # rebasing..use merge head for branch name
+#                case "$br_state" in
+#                    rebase-*)
+#                        # get the ref head during rebase
+#                        branch="$(cat "$gitdir/rebase-merge/head-name")"
+#                        branch="${branch##refs/heads/}"
+#                        branch="${branch##remotes/}"
+#                    ;;
+#                esac
+#
                 # extras (count strings, working dir symbols)
                 local countstr="$(__git_count_str)"
                 local wd_syms="${LIGHT_VIOLET}$(__git_working_dir_symbols)"
