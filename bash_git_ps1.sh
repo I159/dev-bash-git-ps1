@@ -7,39 +7,21 @@
 # Description:
 #   Provides simple information about git repository for the bash terminal
 #
-#   Erik Johnson (xtrementl)
-#   Created: 07-29-2009
-#   Updated: 03-31-2011
+#   Customed by:
+#     Pekelny "I159" Ilya
 #
-#   Special thanks to:
-#     reborg
-#
-#   The PS1 will be formatted as follows:
-#       Non-Git repo:
-#       [{host}: {dir}] -->
-#       $
-#
-#       Git repo:
-#       [{host}: {dir}] {branch}({diff upstream counts}){working dir syms} [{time last commit}] -->
-#       $
-#
-# Notes:
-#   The marker ($) will be colored red/green depending on the result of last command's exit code
-#   For Git repos, the working dir symbols are:
-#       + - staged changes
-#       * - unstaged changes
-#       ^ - stashed changes
-#       % - untracked files
-#       ! - rebase is in progress
+#   Originally authored by:
+#     Erik Johnson (xtrementl)
 #
 # Installation:
 #   Add the following line to your .bashrc:
-#       source ~/.bash_git_ps1.sh
-#-----------------------------------------------------------------------------------------------
-
+#       . ~/.bash_git_ps1.sh
+#
 # Flags. To use the options set an environment variables listed below
 # PS_FULPATH - show full path to the current dir in PS1
 # GIT_BRANCH_FULL - show full branch name with slashes (OpenStack Gerrit specific)
+#-----------------------------------------------------------------------------------------------
+
 
 # colors
 case "$TERM" in
@@ -189,16 +171,6 @@ __git_disp_branch_name() {
     fi
 }
 
-# prints if inside git directory or bare git repository
-__git_in_gitdir() {
-    if [ true = "$(git rev-parse --is-inside-git-dir 2>/dev/null)" ]; then
-        if [ true = "$(git rev-parse --is-bare-repository 2>/dev/null)" ]; then
-            echo 'bare'
-        else
-            echo 'gitdir'
-        fi
-    fi
-}
 
 # prints number of commits that are available on ref B but not ref A
 # arg1: reference A
@@ -256,39 +228,19 @@ __git_prompt() {
         local branch
         local extras
 
-        local in_gitdir="$(__git_in_gitdir)"
-        case "$in_gitdir" in
-            gitdir|bare)
-                branch="~$(echo $in_gitdir | tr "[:lower:]" "[:upper:]")~"
-                extras=""
-            ;;
-            *)
-                local branch="$(__git_disp_branch_name current ${gitdir})"
-#                local br_state="$(__git_branching_state $gitdir)"
-#
-#                # rebasing..use merge head for branch name
-#                case "$br_state" in
-#                    rebase-*)
-#                        # get the ref head during rebase
-#                        branch="$(cat "$gitdir/rebase-merge/head-name")"
-#                        branch="${branch##refs/heads/}"
-#                        branch="${branch##remotes/}"
-#                    ;;
-#                esac
-#
-                # extras (count strings, working dir symbols)
-                local countstr="$(__git_count_str)"
-                local wd_syms="${LIGHT_VIOLET}$(__git_working_dir_symbols)"
-                extras="${countstr}${wd_syms}"
-            ;;
-        esac
+        branch="~$(echo $in_gitdir | tr "[:lower:]" "[:upper:]")~"
+        local branch="$(__git_disp_branch_name current ${gitdir})"
+        # extras (count strings, working dir symbols)
+        local countstr="$(__git_count_str)"
+        local wd_syms="${LIGHT_VIOLET}$(__git_working_dir_symbols)"
+        extras="${countstr}${wd_syms}"
         branch="[${YELLOW}${branch}${RESET}]"
-        local env_name="$(__python_env_name)"
 
         # update PS1
-        PS1="${env_name}${PS1}${branch}${extras}"
+        PS1="${PS1}${branch}${extras}"
     fi
-
+    # Determine env name
+    local env_name="$(__python_env_name)"
     # setup marker that acts off of last exit code
     local marker
     if [ 0 -eq "$last_exit" ]; then
@@ -297,6 +249,6 @@ __git_prompt() {
         marker="$RED"
     fi
     marker="${marker} »${RESET}"
-    PS1="${PS1}${marker} "
+    PS1="${env_name}${PS1}${marker} "
 }
 PROMPT_COMMAND=__git_prompt
