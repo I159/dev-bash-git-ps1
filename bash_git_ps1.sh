@@ -167,7 +167,7 @@ __git_disp_branch_name() {
         echo "$branch"
     else
         IFS='/' read -ra ADDR <<< "$branch"
-        echo "${ADDR[-1]}"
+        echo "${ADDR}"
     fi
 }
 
